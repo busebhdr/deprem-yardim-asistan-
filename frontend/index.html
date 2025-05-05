@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deprem Hazırlık Sistemi</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .tabs {
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            margin-right: 5px;
+            cursor: pointer;
+            background-color: #ddd;
+            border: none;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .category {
+            background: #f8f8f8;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .category h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .product-checkbox {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            width: 45%;
+        }
+        .quantity {
+            width: 60px;
+            margin-left: 10px;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        select, input[type="text"], textarea {
+            padding: 8px;
+            margin: 5px 0;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #emergency-btn {
+            background-color: #f44336;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .ai-powered {
+            background: #e3f2fd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .ai-processing {
+            color: blue;
+            text-align: center;
+            padding: 10px;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .city-summary {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        #map {
+            height: 400px;
+            width: 100%;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏚️ Deprem Hazırlık Sistemi</h1>
+        
+        <div class="ai-powered">
+            🤖 Google Gemini AI ile güçlendirildi
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab('donate')">🎁 Yardım Verebilirim</button>
+            <button class="tab-button" onclick="openTab('need')">🆘 Yardım İstiyorum</button>
+            <button class="tab-button" onclick="openTab('logistics')">Lojistik Kayıt</button>
+            <button class="tab-button" onclick="openTab('market')">🏪 Market/Bakkal Kaydı</button>
+            <button class="tab-button" onclick="openTab('check')">Stok Durumu</button>
+            <button class="tab-button" onclick="openTab('ai-dashboard')">🤖 AI Dashboard</button>
+            <button class="tab-button" onclick="openTab('emergency')">🚨 ACİL DURUM</button>
+        </div>
+
+        <!-- Bağış Kayıt -->
+        <div id="donate" class="tab-content active">
+            <h2>Deprem Öncesi Bağış Kaydı</h2>
+            
+            <div class="form-group">
+                <label>Adınız/Firmanız:</label>
+                <input type="text" id="donorName" placeholder="İsminiz">
+            </div>
+            
+            <div class="form-group">
+                <label>Konumunuz:</label>
+                <select id="donorCity">
+                    <option value="">Şehir seçiniz...</option>
+                    <option value="İstanbul">İstanbul</option>
+                    <option value="İzmir">İzmir</option>
+                    <option value="Ankara">Ankara</option>
+                    <option value="Adana">Adana</option>
+                    <option value="Antalya">Antalya</option>
+                    <option value="Bursa">Bursa</option>
+                    <option value="Gaziantep">Gaziantep</option>
+                    <option value="Konya">Konya</option>
+                    <option value="Samsun">Samsun</option>
+                    <option value="Kayseri">Kayseri</option>
+                    <option value="Trabzon">Trabzon</option>
+                    <option value="Denizli">Denizli</option>
+                    <option value="Diyarbakır">Diyarbakır</option>
+                    <option value="Mersin">Mersin</option>
+                    <option value="Eskişehir">Eskişehir</option>
+                    <option value="Malatya">Malatya</option>
+                    <option value="Kahramanmaraş">Kahramanmaraş</option>
+                </select>
+            </div>
+
+            <h3>Bağışlayabileceğiniz Malzemeler</h3>
+            
+            <div class="category">
+                <h3>🚨 1. Hayatta Kalma ve Gıda</h3>
+                <div style="display: flex; flex-wrap: wrap;">
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="İçme suyu"> İçme suyu
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Konserve"> Konserve
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Bisküvi"> Bisküvi
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Kuruyemiş"> Kuruyemiş
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Bebek maması"> Bebek maması
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Biberon"> Biberon
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                </div>
+            </div>
+            <div class="category">
+                <h3>🛡️ 2. Barınma ve Isınma</h3>
+                <div style="display: flex; flex-wrap: wrap;">
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Çadır"> Çadır
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Battaniye"> Battaniye
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Uyku tulumu"> Uyku tulumu
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Isıtıcı"> Isıtıcı
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Mont"> Mont
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Çorap"> Çorap
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Bere ve Eldiven"> Bere ve Eldiven
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3>🧼 3. Hijyen ve Sağlık</h3>
+                <div style="display: flex; flex-wrap: wrap;">
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Islak mendil"> Islak mendil
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Dezenfektan"> El dezenfektanı
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Sabun"> Sabun
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Tuvalet kağıdı"> Tuvalet kağıdı
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Diş fırçası"> Diş fırçası
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Diş macunu"> Diş macunu
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Bebek bezi"> Bebek bezi
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="İlk yardım çantası"> İlk yardım çantası
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                </div>
+            </div>
+            <div class="category">
+                <h3>🔋 4. Aydınlatma ve İletişim</h3>
+                <div style="display: flex; flex-wrap: wrap;">
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="El feneri"> El feneri
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Yedek pil"> Yedek pil
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Powerbank"> Powerbank
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Radyo"> Radyo
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                    <div class="product-checkbox">
+                        <input type="checkbox" name="product" value="Şarj kablosu"> Şarj kablosu
+                        <input type="number" class="quantity" min="1" value="0" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="submitDonation()">BAĞIŞ KAYDINI TAMAMLA</button>
+            <div id="donationResult"></div>
+        </div>
+
+        <!-- Yardım Talep Formu -->
+        <div id="need" class="tab-content">
+            <h2>🆘 Yardım Talep Formu</h2>
+            <p><strong>İhtiyaçlarınızı belirtin, size en yakın yardımı bulalım.</strong></p>
+            
+            <div class="form-group">
+                <label>Adınız/Kurumunuz:</label>
+                <input type="text" id="needName" placeholder="İsminiz">
+            </div>
+            
+            <div class="form-group">
+                <label>Konumunuz:</label>
+                <select id="needCity">
+                    <option value="">Şehir seçiniz...</option>
+                    <option value="İstanbul">İstanbul</option>
+                    <option value="İzmir">İzmir</option>
+                    <option value="Ankara">Ankara</option>
+                    <option value="Adana">Adana</option>
+                    <option value="Antalya">Antalya</option>
+                    <option value="Bursa">Bursa</option>
+                    <option value="Gaziantep">Gaziantep</option>
+                    <option value="Konya">Konya</option>
+                    <option value="Samsun">Samsun</option>
+                    <option value="Kayseri">Kayseri</option>
+                    <option value="Trabzon">Trabzon</option>
+                    <option value="Denizli">Denizli</option>
+                    <option value="Diyarbakır">Diyarbakır</option>
+                    <option value="Mersin">Mersin</option>
+                    <option value="Eskişehir">Eskişehir</option>
+                    <option value="Malatya">Malatya</option>
+                    <option value="Kahramanmaraş">Kahramanmaraş</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>İhtiyaç Durumunuzu Yazın:</label>
+                <textarea id="needText" rows="4" placeholder="Örn: Acilen su ve battaniye lazım, çocukların üşüyor"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Aciliyet Durumu:</label>
+                <select id="urgencyLevel">
+                    <option value="düşük">Düşük (24 saat içinde)</option>
+                    <option value="orta">Orta (12 saat içinde)</option>
+                    <option value="yüksek">Yüksek (6 saat içinde)</option>
+                    <option value="acil">Acil (Hemen!)</option>
+                </select>
+            </div>
+
+            <button onclick="submitNeed()">YARDIM TALEBİNİ GÖNDER</button>
+            <div id="needResult"></div>
+        </div>
+
+        <!-- Lojistik Kayıt -->
+        <div id="logistics" class="tab-content">
+            <h2>Lojistik Firma/Tır Kaydı</h2>
+            
+            <div class="form-group">
+                <label>Firma/Kişi Adı:</label>
+                <input type="text" id="logisticsName" placeholder="Firma adınız">
+            </div>
+            
+            <div class="form-group">
+                <label>Üs Konumunuz:</label>
+                <select id="logisticsCity">
+                    <option value="">Şehir seçiniz...</option>
+                    <option value="İstanbul">İstanbul</option>
+                    <option value="İzmir">İzmir</option>
+                    <option value="Ankara">Ankara</option>
+                    <option value="Adana">Adana</option>
+                    <option value="Antalya">Antalya</option>
+                    <option value="Bursa">Bursa</option>
+                    <option value="Gaziantep">Gaziantep</option>
+                    <option value="Konya">Konya</option>
+                    <option value="Samsun">Samsun</option>
+                    <option value="Kayseri">Kayseri</option>
+                    <option value="Trabzon">Trabzon</option>
+                    <option value="Denizli">Denizli</option>
+                    <option value="Diyarbakır">Diyarbakır</option>
+                    <option value="Mersin">Mersin</option>
+                    <option value="Eskişehir">Eskişehir</option>
+                    <option value="Malatya">Malatya</option>
+                    <option value="Kahramanmaraş">Kahramanmaraş</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Sunabileceğiniz Tır Sayısı:</label>
+                <input type="number" id="truckCount" min="1" max="50" value="1">
+            </div>
+            
+            <button onclick="registerLogistics()">LOJİSTİK KAYDINI TAMAMLA</button>
+            <div id="logisticsResult"></div>
+        </div>
+        
+        <!-- Market Kayıt sekmesi -->
+        <div id="market" class="tab-content">
+            <h2>🏪 Market/Bakkal Kaydı</h2>
+            
+            <div class="form-group">
+                <label>Market/Firma Adı:</label>
+                <input type="text" id="marketName" placeholder="Marketinizin adı">
+            </div>
+            
+            <div class="form-group">
+                <label>Konumunuz:</label>
+                <select id="marketCity">
+                    <option value="">Şehir seçiniz...</option>
+                    <option value="İstanbul">İstanbul</option>
+                    <option value="İzmir">İzmir</option>
+                    <option value="Ankara">Ankara</option>
+                    <option value="Adana">Adana</option>
+                    <option value="Antalya">Antalya</option>
+                    <option value="Bursa">Bursa</option>
+                    <option value="Gaziantep">Gaziantep</option>
+                    <option value="Konya">Konya</option>
+                    <option value="Samsun">Samsun</option>
+                    <option value="Kayseri">Kayseri</option>
+                    <option value="Trabzon">Trabzon</option>
+                    <option value="Denizli">Denizli</option>
+                    <option value="Diyarbakır">Diyarbakır</option>
+                    <option value="Mersin">Mersin</option>
+                    <option value="Eskişehir">Eskişehir</option>
+                    <option value="Malatya">Malatya</option>
+                    <option value="Kahramanmaraş">Kahramanmaraş</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Bağışlayabileceğiniz Malzemeler:</label>
+                <textarea id="marketSupplies" rows="4" placeholder="Örn: 100 adet konserve, 50 şişe su vb."></textarea>
+            </div>
+            
+            <button onclick="registerMarket()">MARKET KAYDINI TAMAMLA</button>
+            <div id="marketResult"></div>
+        </div>
+
+        <!-- Stok Durumu -->
+        <div id="check" class="tab-content">
+            <h2>Mevcut Stok Durumu</h2>
+            <button onclick="checkStock()">STOK DURUMUNU GÖRÜNTÜLE</button>
+            
+            <!-- Harita -->
+            <div id="map"></div>
+            
+            <div id="stockResult"></div>
+        </div>
+        <!-- AI Dashboard -->
+        <div id="ai-dashboard" class="tab-content">
+            <h2>🤖 Yapay Zeka Analiz Merkezi</h2>
+            
+            <div class="ai-powered" style="text-align: left; padding: 20px;">
+                <h3>Sistem Metrikleri</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px;">
+                        <h4>AI Analiz Sayısı</h4>
+                        <h2 id="aiAnalysisCount">0</h2>
+                    </div>
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 5px;">
+                        <h4>Başarılı Eşleştirme</h4>
+                        <h2 id="aiMatchCount">0</h2>
+                    </div>
+                    <div style="background: #fff3e0; padding: 15px; border-radius: 5px;">
+                        <h4>AI Güven Oranı</h4>
+                        <h2 id="aiAccuracy">98%</h2>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h3>Son AI Öncelik Analizleri</h3>
+                <div id="recentAIAnalysis"></div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h3>AI Eşleştirme Demo</h3>
+
+                <select id="demoCity">
+                    <option value="İstanbul">İstanbul</option>
+                    <option value="İzmir">İzmir</option>
+                    <option value="Ankara">Ankara</option>
+                    <option value="Adana">Adana</option>
+                    <option value="Antalya">Antalya</option>
+                    <option value="Bursa">Bursa</option>
+                    <option value="Gaziantep">Gaziantep</option>
+                    <option value="Konya">Konya</option>
+                    <option value="Samsun">Samsun</option>
+                    <option value="Kayseri">Kayseri</option>
+                    <option value="Trabzon">Trabzon</option>
+                    <option value="Denizli">Denizli</option>
+                    <option value="Diyarbakır">Diyarbakır</option>
+                    <option value="Mersin">Mersin</option>
+                    <option value="Eskişehir">Eskişehir</option>
+                    <option value="Malatya">Malatya</option>
+                    <option value="Kahramanmaraş">Kahramanmaraş</option>
+                </select>
+                <select id="demoProduct">
+                    <option value="Battaniye">Battaniye</option>
+                    <option value="Çadır">Çadır</option>
+                    <option value="Su">Su</option>
+                </select>
+                <button onclick="runAIDemo()">AI DEMOSİNİ ÇALIŞTIR</button>
+                <div id="aiDemoResult"></div>
+
+                <div style="margin-top: 30px;">
+                    <h3>🔮 AI Risk Analizi</h3>
+                    <button onclick="runRiskAnalysis()" style="background: #9c27b0;">AI Analiz Çalıştır</button>
+                    <div id="riskAnalysisResult"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acil Durum -->
+        <div id="emergency" class="tab-content">
+            <h2>🚨 DEPREM ACİL DURUM 🚨</h2>
+            <p>Deprem gerçekleşti! Tüm bağışçılara bildirim gönderilecek.</p>
+            
+            <div class="form-group">
+                <label>Deprem Olan Şehir:</label>
+                <select id="disasterCity">
+                    <option value="">Şehir seçiniz...</option>
+                    <option value="İstanbul">İstanbul</option>
+                    <option value="İzmir">İzmir</option>
+                    <option value="Ankara">Ankara</option>
+                    <option value="Adana">Adana</option>
+                    <option value="Antalya">Antalya</option>
+                    <option value="Bursa">Bursa</option>
+                    <option value="Gaziantep">Gaziantep</option>
+                    <option value="Konya">Konya</option>
+                    <option value="Samsun">Samsun</option>
+                    <option value="Kayseri">Kayseri</option>
+                    <option value="Trabzon">Trabzon</option>
+                    <option value="Denizli">Denizli</option>
+                    <option value="Diyarbakır">Diyarbakır</option>
+                    <option value="Mersin">Mersin</option>
+                    <option value="Eskişehir">Eskişehir</option>
+                    <option value="Malatya">Malatya</option>
+                    <option value="Kahramanmaraş">Kahramanmaraş</option>
+                </select>
+            </div>
+            
+            <button id="emergency-btn" onclick="activateEmergency()">ACİL DURUMU AKTİVE ET!</button>
+            <div id="emergencyStatus"></div>
+            <button onclick="resetDisasterStatus()" style="background: #607d8b; margin-top: 20px;">
+                Deprem Durumunu Sıfırla
+            </button>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</body>
+</html>
+<script>
+    const API_URL = 'http://localhost:8000';
+    let mapInstance = null;
+
+    // Harita başlatma fonksiyonu
+    function initMap() {
+        if (!mapInstance) {
+            mapInstance = L.map('map').setView([39.0, 35.0], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(mapInstance);
+        }
+        return mapInstance;
+    }
+
+    // Şehirlerin koordinatları
+    const cityCoordinates = {
+        'İstanbul': [41.0082, 28.9784],
+        'Ankara': [39.9334, 32.8597],
+        'İzmir': [38.4192, 27.1287],
+        'Bursa': [40.1826, 29.0665],
+        'Trabzon': [41.0027, 39.7168],
+        'Samsun': [41.2928, 36.3313],
+        'Adana': [37.0000, 35.3213],
+        'Antalya': [36.8969, 30.7133],
+        'Konya': [37.8667, 32.4833],
+        'Gaziantep': [37.0662, 37.3833],
+        'Kayseri': [38.7312, 35.4787],
+        'Denizli': [37.7833, 29.0833],
+        'Diyarbakır': [37.9144, 40.2306],
+        'Mersin': [36.8000, 34.6333],
+        'Eskişehir': [39.7667, 30.5250],
+        'Malatya': [38.3552, 38.3095],
+        'Kahramanmaraş': [37.5750, 37.2100]
+    };
+
+    // Toplanma noktaları
+    const collectionPoints = {
+        'İstanbul': {
+            points: ['Taksim Meydanı', 'Sultanahmet Meydanı', 'Beyazıt Meydanı'],
+            coordinates: [[41.0367, 28.9850], [41.0082, 28.9784], [41.0103, 28.9638]]
+        },
+        'Ankara': {
+            points: ['Ulus Meydanı', 'Kızılay Meydanı', 'Tunalı Caddesi'],
+            coordinates: [[39.9390, 32.8551], [39.9208, 32.8541], [39.9127, 32.8360]]
+        },
+        'İzmir': {
+            points: ['Konak Meydanı', 'Cumhuriyet Meydanı', 'Alsancak'],
+            coordinates: [[38.4237, 27.1428], [38.4189, 27.1287], [38.4392, 27.1472]]
+        },
+        'Bursa': {
+            points: ['Heykel Meydanı', 'Kent Meydanı', 'Ulucami Park'],
+            coordinates: [[40.1826, 29.0665], [40.1956, 29.0736], [40.1823, 29.0639]]
+        },
+        'Adana': {
+            points: ['Merkez Park', 'Atatürk Parkı', 'Büyük Saat'],
+            coordinates: [[37.0000, 35.3213], [36.9921, 35.3095], [36.9917, 35.3308]]
+        },
+        'Antalya': {
+            points: ['Cumhuriyet Meydanı', 'Karaalioğlu Parkı', 'Yivli Minare Parkı'],
+            coordinates: [[36.8969, 30.7133], [36.8837, 30.7025], [36.8843, 30.7042]]
+        },
+        'Konya': {
+            points: ['Mevlana Meydanı', 'Alaeddin Tepesi', 'Karatay Park'],
+            coordinates: [[37.8667, 32.4833], [37.8713, 32.4889], [37.8612, 32.4756]]
+        },
+        'Gaziantep': {
+            points: ['Kale Parkı', 'Inci Park', 'Dülük Park'],
+            coordinates: [[37.0662, 37.3833], [37.0651, 37.3775], [37.0745, 37.3952]]
+        },
+        'Şanlıurfa': {
+            points: ['Balıklıgöl Parkı', 'Güllübahçe Park', 'Abgar Park'],
+            coordinates: [[37.1492, 38.7942], [37.1583, 38.7885], [37.1476, 38.7929]]
+        },
+        'Kocaeli': {
+            points: ['İzmit Saat Kulesi', 'Yeni Pazar Merkez', 'Kartepe Park'],
+            coordinates: [[40.7654, 29.9406], [40.7612, 29.9385], [40.7698, 29.9532]]
+        },
+        'Mersin': {
+            points: ['İçel Kültür Park', 'Mersin Marina', 'Sosyal Park'],
+            coordinates: [[36.8000, 34.6333], [36.7950, 34.6400], [36.8050, 34.6300]]
+        },
+        'Diyarbakır': {
+            points: ['Ofis İstasyonu', 'Dicle Parkı', 'Dağkapı Meydanı'],
+            coordinates: [[37.9144, 40.2306], [37.9100, 40.2250], [37.9167, 40.2389]]
+        },
+        'Hatay': {
+            points: ['Ulu Cami Parkı', 'ASO Park', 'Sümerler Parkı'],
+            coordinates: [[36.4018, 36.3498], [36.4056, 36.3450], [36.3982, 36.3542]]
+        },
+        'Manisa': {
+            points: ['Mesir Meydanı', 'Spil Park', 'Mesir Park'],
+            coordinates: [[38.6191, 27.4289], [38.6234, 27.4312], [38.6156, 27.4278]]
+        },
+        'Samsun': {
+            points: ['Cumhuriyet Meydanı', 'Atatürk Meydanı', 'İlkadım Parkı'],
+            coordinates: [[41.2928, 36.3313], [41.2975, 36.3361], [41.2845, 36.3225]]
+        },
+        'Sakarya': {
+            points: ['Adliye Parkı', 'Kent Meydanı', 'Kartepe Merkez'],
+            coordinates: [[40.7864, 30.4031], [40.7823, 30.4012], [40.7900, 30.4089]]
+        },
+        'Kahramanmaraş': {
+            points: ['Elbistan Park', 'Şehir Parkı', 'Göynük Park'],
+            coordinates: [[37.5783, 37.2097], [37.5756, 37.2045], [37.5812, 37.2134]]
+        },
+        'Van': {
+            points: ['Cumhuriyet Meydanı', 'Van Kalesi Park', 'Merkez Park'],
+            coordinates: [[38.4891, 43.4089], [38.4967, 43.3978], [38.4856, 43.4112]]
+        },
+        'Denizli': {
+            points: ['Atatürk Park', 'Yüzbaşı Park', 'Delikliçınar Park'],
+            coordinates: [[37.7747, 29.0875], [37.7723, 29.0856], [37.7789, 29.0912]]
+        },
+        'Eskişehir': {
+            points: ['Haller Gençlik Merkezi', 'Kent Park', 'Sazova Parkı'],
+            coordinates: [[39.7667, 30.5250], [39.7700, 30.5280], [39.7630, 30.5220]]
+        },
+        'Malatya': {
+            points: ['Kernek Meydanı', 'İnönü Parkı', 'Vilayet Meydanı'],
+            coordinates: [[38.3552, 38.3095], [38.3520, 38.3150], [38.3580, 38.3050]]
+        }
+    };
+
+    // Checkbox değiştiğinde miktar inputunu aktif/pasif yap
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('input[name="product"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const quantityInput = this.parentElement.querySelector('.quantity');
+                quantityInput.disabled = !this.checked;
+                if (!this.checked) quantityInput.value = 0;
+            });
+        });
+    });
+
+    function openTab(tabName) {
+        var i, tabcontent, tabbuttons;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove("active");
+        }
+        tabbuttons = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tabbuttons.length; i++) {
+            tabbuttons[i].classList.remove("active");
+        }
+        document.getElementById(tabName).classList.add("active");
+        event.currentTarget.classList.add("active");
+    }
+
+    async function submitDonation() {
+        const name = document.getElementById('donorName').value;
+        const city = document.getElementById('donorCity').value;
+        const checkboxes = document.getElementsByName('product');
+        const selectedProducts = [];
+        
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                const quantity = checkbox.parentElement.querySelector('.quantity').value;
+                selectedProducts.push(`${checkbox.value}: ${quantity} adet`);
+            }
+        });
+
+        if (!name || !city || selectedProducts.length === 0) {
+            document.getElementById('donationResult').className = 'error';
+            document.getElementById('donationResult').textContent = 'Lütfen tüm bilgileri doldurun!';
+            return;
+        }
+
+        const productText = selectedProducts.join(', ');
+        const fullText = `${productText} malzemelerini bağışlayabilirim. Konumum: ${city}`;
+
+        // AI processing göster
+        const resultDiv = document.getElementById('donationResult');
+        resultDiv.innerHTML = `
+            <div class="ai-processing">
+                🤖 Gemini AI Analiz Yapıyor...
+                <div class="spinner"></div>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(`${API_URL}/submit-entry`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: fullText, name })
+            });
+
+            const data = await response.json();
+            resultDiv.className = 'success';
+            resultDiv.innerHTML = `
+                ✅ Bağışınız kaydedildi! ID: ${data.id}
+                <div class="ai-powered">
+                    🧠 Gemini AI ile analiz edildi
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: #e8f5e9;">
+                    <h4>🗺️ ${city} için Bağış Bırakma Noktaları:</h4>
+                    <ul>
+                        ${collectionPoints[city]?.points.map(point => 
+                            `<li>📍 ${point}</li>`
+                        ).join('') || '<li>Bu şehir için henüz toplanma noktası belirlenmedi.</li>'}
+                    </ul>
+                    <p><strong>Lütfen malzemelerinizi bu noktalara bırakın.</strong></p>
+                </div>
+            `;
+            
+            // Formu temizle
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                checkbox.parentElement.querySelector('.quantity').disabled = true;
+                checkbox.parentElement.querySelector('.quantity').value = 0;
+            });
+            document.getElementById('donorName').value = '';
+            document.getElementById('donorCity').value = '';
+        } catch (error) {
+            resultDiv.className = 'error';
+            resultDiv.textContent = 'Hata: ' + error.message;
+        }
+    }
+
+    async function submitNeed() {
+        const city = document.getElementById('needCity').value;
+        const resultDiv = document.getElementById('needResult');
+        
+        // Önce deprem olan şehir olup olmadığını kontrol et
+        const currentDisasterCity = sessionStorage.getItem('disasterCity');
+        
+        if (!currentDisasterCity) {
+            resultDiv.className = 'error';
+            resultDiv.textContent = 'Şu anda aktif bir deprem bölgesi yoktur. Sadece deprem olan şehirdeki kullanıcılar yardım talep edebilir.';
+            return;
+        }
+        
+        if (city !== currentDisasterCity) {
+            resultDiv.className = 'error';
+            resultDiv.textContent = `Yardım talebi sadece ${currentDisasterCity} şehrindeki kullanıcılar için açıktır.`;
+            return;
+        }
+        
+        const name = document.getElementById('needName').value;
+        const needText = document.getElementById('needText').value;
+        const urgency = document.getElementById('urgencyLevel').value;
+        
+        if (!name || !city || !needText) {
+            resultDiv.className = 'error';
+            resultDiv.textContent = 'Lütfen tüm bilgileri doldurun!';
+            return;
+        }
+        
+        const fullText = `${needText}. Konum: ${city}. Aciliyet: ${urgency}`;
+
+        // AI processing göster
+        resultDiv.innerHTML = `
+            <div class="ai-processing">
+                🤖 Gemini AI İhtiyacınızı Analiz Ediyor...
+                <div class="spinner"></div>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(`${API_URL}/submit-entry`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: fullText, name })
+            });
+
+            const data = await response.json();
+            resultDiv.className = 'success';
+            resultDiv.innerHTML = `
+                ✅ İhtiyacınız başarıyla kaydedildi! ID: ${data.id}
+                <div class="ai-powered">
+                    🧠 Gemini AI ile analiz edildi
+                    <p>Size en yakın yardımları arıyoruz...</p>
+                </div>
+            `;
+            
+            // Form temizle
+            document.getElementById('needName').value = '';
+            document.getElementById('needCity').value = '';
+            document.getElementById('needText').value = '';
+            document.getElementById('urgencyLevel').value = 'düşük';
+        } catch (error) {
+            resultDiv.className = 'error';
+            resultDiv.textContent = 'Hata: ' + error.message;
+        }
+    }
+
+    async function registerLogistics() {
+        const name = document.getElementById('logisticsName').value;
+        const city = document.getElementById('logisticsCity').value;
+        const truckCount = document.getElementById('truckCount').value;
+
+        if (!name || !city || !truckCount) {
+            document.getElementById('logisticsResult').className = 'error';
+            document.getElementById('logisticsResult').textContent = 'Lütfen tüm bilgileri doldurun!';
+            return;
+        }
+
+        const text = `Lojistik firması olarak ${truckCount} tır sunabilirim. Konum: ${city}`;
+
+        try {
+            const response = await fetch(`${API_URL}/submit-entry`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text, name })
+            });
+
+            const data = await response.json();
+            document.getElementById('logisticsResult').className = 'success';
+            document.getElementById('logisticsResult').innerHTML = `✅ Lojistik kaydınız tamamlandı! ID: ${data.id}`;
+        } catch (error) {
+            document.getElementById('logisticsResult').className = 'error';
+            document.getElementById('logisticsResult').textContent = 'Hata: ' + error.message;
+        }
+    }
+
+    async function registerMarket() {
+        const name = document.getElementById('marketName').value;
+        const city = document.getElementById('marketCity').value;
+        const supplies = document.getElementById('marketSupplies').value;
+
+        if (!name || !city || !supplies) {
+            document.getElementById('marketResult').className = 'error';
+            document.getElementById('marketResult').textContent = 'Lütfen tüm bilgileri doldurun!';
+            return;
+        }
+
+        const text = `Market olarak ${supplies} malzemeleri sağlayabilirim. Konum: ${city}`;
+
+        try {
+            const response = await fetch(`${API_URL}/submit-entry`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text, name })
+            });
+
+            const data = await response.json();
+            document.getElementById('marketResult').className = 'success';
+            document.getElementById('marketResult').innerHTML = `✅ Market kaydınız tamamlandı! ID: ${data.id}`;
+        } catch (error) {
+            document.getElementById('marketResult').className = 'error';
+            document.getElementById('marketResult').textContent = 'Hata: ' + error.message;
+        }
+    }
+
+    async function checkStock() {
+        const resultDiv = document.getElementById('stockResult');
+        resultDiv.innerHTML = '<div class="ai-processing">📊 Stok hesaplanıyor...</div>';
+        
+        try {
+            const response = await fetch(`${API_URL}/stock-summary`);
+            const data = await response.json();
+            
+            // Haritayı başlat
+            const map = initMap();
+            
+            // Önceki markerları temizle
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            let html = '<h3>Şehir Bazlı Detaylı Stok Durumu:</h3>';
+            
+            Object.entries(data.stock_summary).forEach(([city, cityData]) => {
+                // Haritaya marker ekle
+                if (cityCoordinates[city]) {
+                    const coords = cityCoordinates[city];
+                    
+                    // İhtiyaç ve arz listelerini ayır
+                    let demandList = [];
+                    let supplyList = [];
+                    
+                    cityData.entries.forEach(entry => {
+                        if (entry.text.includes('İhtiyaç') || entry.text.includes('lazım') || entry.text.includes('acil')) {
+                            demandList.push(entry.text);
+                        } else {
+                            supplyList.push(entry.text);
+                        }
+                    });
+                    
+                    const marker = L.marker(coords).addTo(map);
+                    marker.bindPopup(`
+                        <b>${city}</b><br>
+                        <b>📦 Bağışlar:</b><br>
+                        ${supplyList.slice(0,2).join('<br>') || 'Yok'}<br>
+                        <b>🚨 İhtiyaçlar:</b><br>
+                        ${demandList.slice(0,2).join('<br>') || 'Yok'}<br>
+                        <b>Tır Sayısı:</b> ${cityData.trucks}
+                    `);
+                }
+                
+                html += `
+                    <div class="city-summary">
+                        <h4>${city}</h4>
+                        <div style="margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+                            <strong>📦 Bağışlar:</strong>
+                            <ul style="margin: 5px 0; color: green; list-style-type: none; padding-left: 20px;">
+                `;
+                
+                // Bağış listeleri
+                cityData.entries.forEach(entry => {
+                    if (!entry.text.includes('İhtiyaç') && !entry.text.includes('lazım') && !entry.text.includes('acil')) {
+                        html += `<li>✅ ${entry.name}: ${entry.text}</li>`;
+                    }
+                });
+                
+                html += `
+                            </ul>
+                        </div>
+                        <div style="padding-top: 10px;">
+                            <strong>🚨 İhtiyaçlar:</strong>
+                            <ul style="margin: 5px 0; color: red; list-style-type: none; padding-left: 20px;">
+                `;
+                
+                // İhtiyaç listeleri
+                cityData.entries.forEach(entry => {
+                    if (entry.text.includes('İhtiyaç') || entry.text.includes('lazım') || entry.text.includes('acil')) {
+                        html += `<li>❌ ${entry.name}: ${entry.text}</li>`;
+                    }
+                });
+                
+                html += `
+                            </ul>
+                        </div>
+                        ${cityData.trucks > 0 ? `<p><strong>🚛 Tır Sayısı:</strong> ${cityData.trucks}</p>` : ''}
+                    </div>
+                `;
+            });
+            
+            resultDiv.innerHTML = html;
+
+            // Rotaları göster
+            try {
+                const routeResponse = await fetch(`${API_URL}/active-routes`);
+                const routeData = await routeResponse.json();
+                const currentDisasterCity = sessionStorage.getItem('disasterCity');
+                
+                // Eğer deprem aktif ise, sadece o şehre giden rotaları göster
+                if (currentDisasterCity) {
+                    // Tüm şehirlerden deprem şehrine çizgi çek
+                    Object.keys(cityCoordinates).forEach(fromCity => {
+                        if (fromCity !== currentDisasterCity && cityCoordinates[fromCity] && cityCoordinates[currentDisasterCity]) {
+                            const latlngs = [cityCoordinates[fromCity], cityCoordinates[currentDisasterCity]];
+                            const polyline = L.polyline(latlngs, {
+                                color: 'red',  // Deprem rotası kırmızı
+                                weight: 3
+                            }).addTo(map);
+                            
+                            polyline.bindPopup(`
+                                <b>🚛 ${fromCity} → ${currentDisasterCity}</b><br>
+                                <b>DEPREM YARDIM ROTASI</b><br>
+                                Yardım malzemeleri gönderilebilir
+                            `);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Rota yüklenirken hata:', error);
+            }
+        } catch (error) {
+            resultDiv.className = 'error';
+            resultDiv.textContent = 'Hata: ' + error.message;
+        }
+    }
+
+    async function activateEmergency() {
+        const city = document.getElementById('disasterCity').value;
+        
+        if (!city) {
+            document.getElementById('emergencyStatus').className = 'error';
+            document.getElementById('emergencyStatus').textContent = 'Lütfen deprem olan şehri seçin!';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_URL}/simulate-earthquake?konum=${encodeURIComponent(city)}`, {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Deprem olan şehri sessionStorage'a kaydet
+                sessionStorage.setItem('disasterCity', city);
+                
+                // Deprem bölgesindeki tüm kullanıcılara bildirim sistemi
+                alert(`Deprem Uyarısı: ${city} bölgesinde deprem gerçekleşti! Size özel yardım sistemi aktifleştirildi.`);
+                
+                // HTML oluşturma
+                let html = `<h3>🚨 ${city} için acil durum aktif!</h3>`;
+                html += `<p>🕒 Zaman: ${data.timestamp}</p>`;
+                html += `<h4>📊 Mevcut Kaynaklar:</h4>`;
+                
+                Object.entries(data.available_resources).forEach(([key, value]) => {
+                    html += `<p>• ${key}: ${value} adet</p>`;
+                });
+                
+                html += `<h4>🚛 Lojistik Destek:</h4>`;
+                if (data.logistics_support && data.logistics_support.length > 0) {
+                    data.logistics_support.forEach(dispatch => {
+                        html += `<p>✈️ ${dispatch.company} firması ${dispatch.from}'dan ${dispatch.to}'a ${dispatch.product} gönderiyor</p>`;
+                        html += `<p>📍 Varış zamanı: ${dispatch.route.estimated_arrival}</p>`;
+                    });
+                }
+                
+                html += `<h4>📢 Durum Güncellemeleri:</h4>`;
+                data.status_updates.forEach(update => {
+                    html += `<p>✅ ${update}</p>`;
+                });
+                
+                try {
+                    // Bildirimleri getir
+                    const notificationResponse = await fetch(`${API_URL}/get-notifications?konum=${city}`, {
+                        method: 'POST'
+                    });
+                    const notificationData = await notificationResponse.json();
+                    
+                    html += `<h4>📬 Gönderilen Bildirimler:</h4>`;
+                    if (notificationData.notifications && notificationData.notifications.length > 0) {
+                        html += '<ul style="max-height: 200px; overflow-y: auto;">';
+                        notificationData.notifications.forEach(notification => {
+                            html += `<li>📤 ${notification.to} (${notification.city}): ${notification.message}</li>`;
+                        });
+                        html += '</ul>';
+                    } else {
+                        html += '<p>Henüz bildirim gönderilmedi.</p>';
+                    }
+                } catch (error) {
+                    console.error('Bildirim yüklenirken hata:', error);
+                }
+                
+                document.getElementById('emergencyStatus').className = 'success';
+                document.getElementById('emergencyStatus').innerHTML = html;
+                
+                // Haritayı güncelle
+                openTab('check');
+            }
+        } catch (error) {
+            document.getElementById('emergencyStatus').className = 'error';
+            document.getElementById('emergencyStatus').textContent = 'Hata: ' + error.message;
+        }
+    }
+
+    function resetDisasterStatus() {
+        sessionStorage.removeItem('disasterCity');
+        document.getElementById('emergencyStatus').innerHTML = 
+            '<div class="success">Deprem durumu sıfırlandı. Sistem normal moda döndü.</div>';
+    }
+    
+    async function runAIDemo() {
+        const city = document.getElementById('demoCity').value;
+        const product = document.getElementById('demoProduct').value;
+        const resultDiv = document.getElementById('aiDemoResult');
+        
+        resultDiv.innerHTML = '<div class="ai-processing">🤖 AI Analiz Yapıyor... <div class="spinner"></div></div>';
+        
+        try {
+            const response = await fetch(`${API_URL}/ai-smart-matching?konum=${city}&urun_adi=${product}`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            
+            resultDiv.innerHTML = `
+                <div class="ai-powered" style="margin-top: 15px;">
+                    <h4>🧠 AI Analiz Sonucu</h4>
+                    <p><strong>🎯 Öneri:</strong> ${data.ai_recommendation.recommended_city}</p>
+                    <p><strong>💡 Mantık:</strong> ${data.ai_recommendation.reason}</p>
+                    <p><strong>📍 Mesafe:</strong> ${data.ai_recommendation.distance} km</p>
+                    <p><strong>📦 Stok:</strong> ${data.ai_recommendation.available_amount} adet</p>
+                    <div style="margin-top: 10px; padding: 10px; background: rgba(76, 175, 80, 0.1);">
+                        <small>✨ Gemini AI tarafından analiz edildi</small>
+                    </div>
+                </div>
+            `;
+            
+            // AI metriklerini güncelle
+            document.getElementById('aiAnalysisCount').textContent = 
+                parseInt(document.getElementById('aiAnalysisCount').textContent) + 1;
+            document.getElementById('aiMatchCount').textContent = 
+                parseInt(document.getElementById('aiMatchCount').textContent) + 1;
+                
+        } catch (error) {
+            resultDiv.className = 'error';
+            resultDiv.textContent = 'Hata: ' + error.message;
+        }
+    }
+    
+    async function runRiskAnalysis() {
+        const resultDiv = document.getElementById('riskAnalysisResult');
+        resultDiv.innerHTML = '<div class="ai-processing">🤖 AI Risk Analizi Yapıyor... <div class="spinner"></div></div>';
+        
+        try {
+            const response = await fetch(`${API_URL}/ai-risk-analysis`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            
+            resultDiv.innerHTML = `
+                <div class="ai-powered" style="margin-top: 15px;">
+                    <h4>🎯 AI Analiz Sonucu</h4>
+                    <div style="margin-bottom: 10px;">
+                        <h5 style="color: #d32f2f;">⚠️ Yüksek Risk Şehirleri:</h5>
+                        ${data.ai_analysis.high_risk.join(', ')}
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <h5 style="color: #f57c00;">📉 Düşük Stok Şehirleri:</h5>
+                        ${data.ai_analysis.low_supply.join(', ')}
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                         <h5 style="color: #0288d1;">💡 AI Önerisi:</h5>
+                          ${data.ai_analysis.recommendation}
+                    </div>
+                    <small style="color: #666;">Gemini AI tarafından analiz edildi</small>
+                </div>
+            `;
+        } catch (error) {
+            resultDiv.className = 'error';
+        resultDiv.textContent = 'Hata: ' + error.message;
+    }
+}
+    </script>
+   
+</body>
+</html>
