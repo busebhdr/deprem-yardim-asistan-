@@ -100,3 +100,5 @@ Yerel market işbirlikleri ile hızlı çözüm
 Gönüllü katkıların harita bazlı yönlendirilmesi
 
 Gerçek zamanlı veri ile kriz sonrası verimlilik
+
+📌 Proje Buse Bahadır ve Mehmet Akif Elem tarafından hazırlanmıştır.
